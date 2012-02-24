@@ -66,6 +66,9 @@
  * ========================================
  *	#import "MyClass.h"
  *
+ *	// This line is optional. Use it if you've enabled GCC_WARN_UNDECLARED_SELECTOR
+ *	SYNTHESIZE_SINGLETON_FOR_CLASS_PROTOTYPE(MyClass);
+ *
  *	@implementation MyClass
  *
  *	SYNTHESIZE_SINGLETON_FOR_CLASS(MyClass);
@@ -90,6 +93,16 @@
 + (__CLASSNAME__*) sharedInstance;	\
 + (void) purgeSharedInstance;
 
+
+#define SYNTHESIZE_SINGLETON_FOR_CLASS_PROTOTYPE(__CLASSNAME__) \
+@interface __CLASSNAME__ (SynthesizeSingletonPrivate)	\
+- (NSUInteger)retainCountDoNothing;	\
+- (NSUInteger)retainCountDoSomething;	\
+- (oneway void)releaseDoNothing;	\
+- (oneway void)releaseDoSomething;	\
+- (id)autoreleaseDoNothing;	\
+- (id)autoreleaseDoSomething; \
+@end
 
 #define SYNTHESIZE_SINGLETON_FOR_CLASS(__CLASSNAME__)	\
 	\
@@ -138,7 +151,7 @@ static volatile __CLASSNAME__* _##__CLASSNAME__##_sharedInstance = nil;	\
 			}	\
 		}	\
 	}	\
-	return _##__CLASSNAME__##_sharedInstance;	\
+    return (__CLASSNAME__*) _##__CLASSNAME__##_sharedInstance; \
 }	\
 	\
 + (void)purgeSharedInstance	\
@@ -160,6 +173,7 @@ static volatile __CLASSNAME__* _##__CLASSNAME__##_sharedInstance = nil;	\
 	\
 - (id)copyWithZone:(NSZone *)zone	\
 {	\
+    _Pragma ( "unused(zone)" ) \
 	return self;	\
 }	\
 	\
@@ -183,14 +197,14 @@ static volatile __CLASSNAME__* _##__CLASSNAME__##_sharedInstance = nil;	\
 	return [super retainCount];	\
 }	\
 	\
-- (void)release	\
+- (oneway void)release	\
 {	\
 	NSAssert1(1==0, @"SynthesizeSingleton: %@ ERROR: -(void)release method did not get swizzled.", self);	\
 }	\
 	\
-- (void)releaseDoNothing{}	\
+- (oneway void)releaseDoNothing{}	\
 	\
-- (void)releaseDoSomething	\
+- (oneway void)releaseDoSomething	\
 {	\
 	@synchronized(self)	\
 	{	\
@@ -249,6 +263,9 @@ static volatile __CLASSNAME__* _##__CLASSNAME__##_sharedInstance = nil;	\
  *	MyClass.m:
  * ========================================
  *	#import "MyClass.h"
+ *
+ *	// This line is optional. Use it if you've enabled GCC_WARN_UNDECLARED_SELECTOR
+ *	SYNTHESIZE_SINGLETON_FOR_CLASS_PROTOTYPE(MyClass);
  *
  *	@implementation MyClass
  *
